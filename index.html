@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -76,10 +76,12 @@
         questionForm.addEventListener('submit', (event) => {
             event.preventDefault();
             const question = questionInput.value;
-            const playerId = Date.now(); // You can use a more sophisticated method for player IDs
 
-            // Push question to Firebase
-            set(ref(database, 'memoryGame/' + playerId), {
+            // Generate a unique key for the question
+            const questionId = Date.now(); // Unique ID based on current timestamp
+
+            // Push question to Firebase under a common path
+            set(ref(database, 'memoryGame/questions/' + questionId), {
                 question: question
             });
 
@@ -88,7 +90,7 @@
         });
 
         // Listen for questions from Firebase
-        const questionsRef = ref(database, 'memoryGame/');
+        const questionsRef = ref(database, 'memoryGame/questions/');
         onValue(questionsRef, (snapshot) => {
             questionsList.innerHTML = ''; // Clear the existing questions
             snapshot.forEach((childSnapshot) => {
