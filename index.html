@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Memory Game</title>
+    <title>Memory Game - Enter Questions</title>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
         import { getDatabase, ref, set, get, onValue } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
@@ -45,33 +45,11 @@
                 const playerCount = Object.keys(players || {}).length;
 
                 if (playerCount >= 2) {
-                    displayQuestions(players);
+                    window.location.href = 'questions.html'; // Redirect to the questions page
                 } else {
                     document.getElementById("status").innerText = "Waiting for the other player...";
                 }
             });
-        }
-
-        function displayQuestions(players) {
-            const questionsA = players[Object.keys(players)[0]].questions;
-            const questionsB = players[Object.keys(players)[1]].questions;
-
-            document.getElementById("status").innerText = "Both players have submitted!";
-
-            let index = 0;
-
-            function showNextQuestion() {
-                if (index < 5) {
-                    document.getElementById("questionDisplay").innerText = 
-                        `Player 1: ${questionsA[index]} | Player 2: ${questionsB[index]}`;
-                    index++;
-                } else {
-                    document.getElementById("questionDisplay").innerText = "No more questions!";
-                }
-            }
-
-            document.getElementById("nextButton").onclick = showNextQuestion;
-            showNextQuestion();
         }
 
         function resetGame() {
@@ -86,9 +64,37 @@
     </script>
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Arial', sans-serif;
             text-align: center;
             padding: 20px;
+            background-color: #f9f9f9;
+            color: #333;
+        }
+        h1, h2 {
+            color: #ff69b4;
+        }
+        input {
+            margin: 5px;
+            padding: 10px;
+            width: 300px;
+            border-radius: 5px;
+            border: 2px solid #ff69b4;
+            transition: border-color 0.3s;
+        }
+        input:focus {
+            border-color: #ff1493;
+        }
+        button {
+            background-color: #ff69b4;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 10px 15px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #ff1493;
         }
         #resetButton {
             position: absolute;
@@ -112,8 +118,5 @@
         <button onclick="submitQuestions()">Submit Questions</button>
     </div>
     <h2 id="status"></h2>
-    <h2>Question Display:</h2>
-    <p id="questionDisplay"></p>
-    <button id="nextButton">Next Question</button>
 </body>
 </html>
