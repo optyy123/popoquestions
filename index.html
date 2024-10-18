@@ -3,12 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Memory Game - Enter Questions</title>
+    <title>Question Input</title>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
-        import { getDatabase, ref, set, get, onValue } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
+        import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
 
-        // Your web app's Firebase configuration
         const firebaseConfig = {
             apiKey: "AIzaSyDmjiA1BmuPaf-MgB9uWPcsYKDpbOLYDcU",
             authDomain: "questionspopo-7a8e6.firebaseapp.com",
@@ -19,104 +18,37 @@
             measurementId: "G-MRLQNR8602"
         };
 
-        // Initialize Firebase
         const app = initializeApp(firebaseConfig);
-        const db = getDatabase(app);
-
-        const playerId = Math.random().toString(36).substr(2, 9); // Generate a unique player ID
-        document.getElementById("playerId").innerText = `Your Player ID: ${playerId}`;
+        const database = getDatabase(app);
 
         function submitQuestions() {
+            const playerId = document.getElementById("playerId").value;
             const questions = [];
             for (let i = 1; i <= 5; i++) {
                 questions.push(document.getElementById(`question${i}`).value);
             }
-            set(ref(db, `players/${playerId}`), {
+            set(ref(database, 'players/' + playerId), {
                 questions: questions
             }).then(() => {
-                checkBothPlayers();
+                window.location.href = "questions.html?playerId=" + playerId;
+            }).catch((error) => {
+                console.error("Error writing to database: ", error);
             });
-        }
-
-        function checkBothPlayers() {
-            const playersRef = ref(db, 'players');
-            onValue(playersRef, (snapshot) => {
-                const players = snapshot.val();
-                const playerCount = Object.keys(players || {}).length;
-
-                if (playerCount >= 2) {
-                    window.location.href = 'questions.html'; // Redirect to the questions page
-                } else {
-                    document.getElementById("status").innerText = "Waiting for the other player...";
-                }
-            });
-        }
-
-        function resetGame() {
-            const playersRef = ref(db, 'players');
-            set(playersRef, null); // Clear all player data
-            document.getElementById("questionDisplay").innerText = "";
-            document.getElementById("status").innerText = "Game reset. Please enter your questions.";
-            for (let i = 1; i <= 5; i++) {
-                document.getElementById(`question${i}`).value = "";
-            }
         }
     </script>
-    <style>
-        body {
-            font-family: 'Arial', sans-serif;
-            text-align: center;
-            padding: 20px;
-            background-color: #f9f9f9;
-            color: #333;
-        }
-        h1, h2 {
-            color: #ff69b4;
-        }
-        input {
-            margin: 5px;
-            padding: 10px;
-            width: 300px;
-            border-radius: 5px;
-            border: 2px solid #ff69b4;
-            transition: border-color 0.3s;
-        }
-        input:focus {
-            border-color: #ff1493;
-        }
-        button {
-            background-color: #ff69b4;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            padding: 10px 15px;
-            cursor: pointer;
-            transition: background-color 0.3s;
-        }
-        button:hover {
-            background-color: #ff1493;
-        }
-        #resetButton {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-        }
-    </style>
 </head>
 <body>
-    <button id="resetButton" onclick="resetGame()">Reset Game</button>
-    <h1>Memory Game</h1>
-    <p id="playerId"></p>
-    <p>Each player will input 5 questions. After submitting, wait for the other player.</p>
-    <div>
-        <h2>Input Questions:</h2>
-        <input type="text" id="question1" placeholder="Question 1" required><br>
-        <input type="text" id="question2" placeholder="Question 2" required><br>
-        <input type="text" id="question3" placeholder="Question 3" required><br>
-        <input type="text" id="question4" placeholder="Question 4" required><br>
-        <input type="text" id="question5" placeholder="Question 5" required><br>
-        <button onclick="submitQuestions()">Submit Questions</button>
-    </div>
-    <h2 id="status"></h2>
+    <h1>Welcome to the Question Game!</h1>
+    <p>Please enter your Player ID:</p>
+    <input type="text" id="playerId" required>
+
+    <h2>Enter Your 5 Questions:</h2>
+    <textarea id="question1" placeholder="Question 1" required></textarea>
+    <textarea id="question2" placeholder="Question 2" required></textarea>
+    <textarea id="question3" placeholder="Question 3" required></textarea>
+    <textarea id="question4" placeholder="Question 4" required></textarea>
+    <textarea id="question5" placeholder="Question 5" required></textarea>
+
+    <button onclick="submitQuestions()">Submit Questions</button>
 </body>
 </html>
