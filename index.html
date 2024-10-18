@@ -1,0 +1,131 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Memory Game</title>
+    <link rel="stylesheet" href="styles.css"> <!-- Link to your CSS file if you have one -->
+    <script type="module">
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+        import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
+
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyDmjiA1BmuPaf-MgB9uWPcsYKDpbOLYDcU",
+            authDomain: "questionspopo-7a8e6.firebaseapp.com",
+            databaseURL: "https://questionspopo-7a8e6-default-rtdb.firebaseio.com/",
+            projectId: "questionspopo-7a8e6",
+            storageBucket: "questionspopo-7a8e6.appspot.com",
+            messagingSenderId: "411558682757",
+            appId: "1:411558682757:web:c4c69e01e5c037d9fe89ec",
+            measurementId: "G-MRLQNR8602"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // Function to submit questions
+        async function submitQuestions() {
+            const playerId = document.getElementById("playerId").value;
+            const questionInput = document.getElementById("question").value;
+
+            if (playerId && questionInput) {
+                const questionsRef = ref(db, `memoryGame/questions/${playerId}`);
+                await set(questionsRef, questionInput);
+                alert("Question submitted!");
+                document.getElementById("question").value = ''; // Clear input
+            } else {
+                alert("Please enter a Player ID and a question!");
+            }
+        }
+
+        // Function to retrieve questions
+        async function retrieveQuestions() {
+            const playerId = document.getElementById("playerId").value;
+            const questionsRef = ref(db, `memoryGame/questions/${playerId}`);
+            const snapshot = await get(questionsRef);
+            if (snapshot.exists()) {
+                document.getElementById("questionsList").innerText = `Your Questions: ${snapshot.val()}`;
+            } else {
+                document.getElementById("questionsList").innerText = "No questions found.";
+            }
+        }
+
+        // Add event listeners
+        document.addEventListener("DOMContentLoaded", () => {
+            document.getElementById("submitQuestion").addEventListener("click", submitQuestions);
+            document.getElementById("retrieveQuestions").addEventListener("click", retrieveQuestions);
+        });
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1>Memory Game</h1>
+        <input type="text" id="playerId" placeholder="Enter your Player ID" required>
+        <input type="text" id="question" placeholder="Enter your question" required>
+        <button id="submitQuestion">Submit Question</button>
+        <button id="retrieveQuestions">Retrieve Questions</button>
+        <h2>Your Questions:</h2>
+        <div id="questionsList"></div>
+    </div>
+    <style>
+        /* Simple styles for the page */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            max-width: 400px;
+            margin: auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+
+        input {
+            width: calc(100% - 20px);
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+        }
+
+        button {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            border: none;
+            border-radius: 3px;
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        h2 {
+            margin-top: 20px;
+            color: #333;
+        }
+
+        #questionsList {
+            margin-top: 10px;
+            font-size: 16px;
+            color: #555;
+        }
+    </style>
+</body>
+</html>
