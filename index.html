@@ -4,86 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Memory Game</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f9f9f9;
-            text-align: center;
-            margin: 0;
-            padding: 20px;
-        }
-        h1 {
-            color: #333;
-        }
-        h2 {
-            color: #555;
-        }
-        #questionForm {
-            margin: 20px 0;
-        }
-        input[type="text"] {
-            padding: 10px;
-            width: 300px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-        }
-        button {
-            padding: 10px 15px;
-            background-color: #28a745;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            margin-left: 10px;
-        }
-        button:hover {
-            background-color: #218838;
-        }
-        #questionsList {
-            margin-top: 20px;
-            text-align: left;
-        }
-        #currentQuestion {
-            margin: 20px 0;
-            font-size: 1.5em;
-        }
-        .reset-button {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            padding: 10px;
-            background-color: #dc3545;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        .reset-button:hover {
-            background-color: #c82333;
-        }
-    </style>
-</head>
-<body>
-    <button class="reset-button" id="resetButton">Reset Game</button>
-    <h1>Welcome to the Memory Game!</h1>
-    <h2>How to Play:</h2>
-    <p>Each player will input five questions. After both players have submitted their questions, you will take turns answering the questions one at a time.</p>
-    
-    <h2>Enter Your Questions:</h2>
-    <form id="questionForm">
-        <input type="text" id="questionInput" placeholder="Enter your question" required>
-        <button type="submit">Submit Question</button>
-    </form>
-    
-    <div id="questionsList"></div>
-    <div id="currentQuestion"></div>
-    <button id="nextQuestionButton" style="display:none;">Next Question</button>
-
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
-        import { getDatabase, ref, set, onValue, remove } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
+        import { getDatabase, ref, set, get, onValue } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
 
-        // Your Firebase configuration
+        // Your web app's Firebase configuration
         const firebaseConfig = {
             apiKey: "AIzaSyDmjiA1BmuPaf-MgB9uWPcsYKDpbOLYDcU",
             authDomain: "questionspopo-7a8e6.firebaseapp.com",
@@ -96,80 +21,99 @@
 
         // Initialize Firebase
         const app = initializeApp(firebaseConfig);
-        const database = getDatabase(app);
+        const db = getDatabase(app);
 
-        const questionForm = document.getElementById('questionForm');
-        const questionInput = document.getElementById('questionInput');
-        const questionsList = document.getElementById('questionsList');
-        const currentQuestionDisplay = document.getElementById('currentQuestion');
-        const nextQuestionButton = document.getElementById('nextQuestionButton');
-        const resetButton = document.getElementById('resetButton');
+        const playerId = Math.random().toString(36).substr(2, 9); // Generate a unique player ID
+        document.getElementById("playerId").innerText = `Your Player ID: ${playerId}`;
 
-        let playerQuestions = {};
-        let currentIndex = 0;
-
-        questionForm.addEventListener('submit', (event) => {
-            event.preventDefault();
-            const playerId = prompt("Enter your Player ID (e.g., player1 or player2):");
-            const question = questionInput.value;
-
-            // Store question in Firebase under the player's ID
-            if (!playerQuestions[playerId]) {
-                playerQuestions[playerId] = [];
+        function submitQuestions() {
+            const questions = [];
+            for (let i = 1; i <= 5; i++) {
+                questions.push(document.getElementById(`question${i}`).value);
             }
-            if (playerQuestions[playerId].length < 5) {
-                playerQuestions[playerId].push(question);
-                set(ref(database, `memoryGame/${playerId}/questions/${Date.now()}`), question);
-                questionInput.value = '';
-                displayQuestions();
-            } else {
-                alert("You have already submitted 5 questions!");
-            }
-        });
-
-        function displayQuestions() {
-            questionsList.innerHTML = '';
-            for (const playerId in playerQuestions) {
-                playerQuestions[playerId].forEach(question => {
-                    const questionItem = document.createElement('div');
-                    questionItem.textContent = question;
-                    questionsList.appendChild(questionItem);
-                });
-            }
-            checkIfBothPlayersSubmitted();
+            set(ref(db, `players/${playerId}`), {
+                questions: questions
+            }).then(() => {
+                checkBothPlayers();
+            });
         }
 
-        function checkIfBothPlayersSubmitted() {
-            if (playerQuestions['player1'] && playerQuestions['player1'].length === 5 &&
-                playerQuestions['player2'] && playerQuestions['player2'].length === 5) {
-                nextQuestionButton.style.display = 'inline';
-                loadNextQuestion();
-            }
+        function checkBothPlayers() {
+            const playersRef = ref(db, 'players');
+            onValue(playersRef, (snapshot) => {
+                const players = snapshot.val();
+                const playerCount = Object.keys(players || {}).length;
+
+                if (playerCount >= 2) {
+                    displayQuestions(players);
+                } else {
+                    document.getElementById("status").innerText = "Waiting for the other player...";
+                }
+            });
         }
 
-        function loadNextQuestion() {
-            const player1Questions = Object.values(playerQuestions['player1']);
-            const player2Questions = Object.values(playerQuestions['player2']);
-            if (currentIndex < Math.min(player1Questions.length, player2Questions.length)) {
-                currentQuestionDisplay.textContent = `Question: ${player1Questions[currentIndex]} (Player 1)`;
-                currentIndex++;
-            } else {
-                currentQuestionDisplay.textContent = "No more questions!";
-                nextQuestionButton.style.display = 'none';
+        function displayQuestions(players) {
+            const questionsA = players[Object.keys(players)[0]].questions;
+            const questionsB = players[Object.keys(players)[1]].questions;
+
+            document.getElementById("status").innerText = "Both players have submitted!";
+
+            let index = 0;
+
+            function showNextQuestion() {
+                if (index < 5) {
+                    document.getElementById("questionDisplay").innerText = 
+                        `Player 1: ${questionsA[index]} | Player 2: ${questionsB[index]}`;
+                    index++;
+                } else {
+                    document.getElementById("questionDisplay").innerText = "No more questions!";
+                }
             }
+
+            document.getElementById("nextButton").onclick = showNextQuestion;
+            showNextQuestion();
         }
 
-        nextQuestionButton.addEventListener('click', loadNextQuestion);
-
-        resetButton.addEventListener('click', () => {
-            // Clear both players' questions in Firebase
-            remove(ref(database, 'memoryGame'));
-            playerQuestions = {};
-            questionsList.innerHTML = '';
-            currentQuestionDisplay.innerHTML = '';
-            currentIndex = 0;
-            nextQuestionButton.style.display = 'none';
-        });
+        function resetGame() {
+            const playersRef = ref(db, 'players');
+            set(playersRef, null); // Clear all player data
+            document.getElementById("questionDisplay").innerText = "";
+            document.getElementById("status").innerText = "Game reset. Please enter your questions.";
+            for (let i = 1; i <= 5; i++) {
+                document.getElementById(`question${i}`).value = "";
+            }
+        }
     </script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+        }
+        #resetButton {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <button id="resetButton" onclick="resetGame()">Reset Game</button>
+    <h1>Memory Game</h1>
+    <p id="playerId"></p>
+    <p>Each player will input 5 questions. After submitting, wait for the other player.</p>
+    <div>
+        <h2>Input Questions:</h2>
+        <input type="text" id="question1" placeholder="Question 1" required><br>
+        <input type="text" id="question2" placeholder="Question 2" required><br>
+        <input type="text" id="question3" placeholder="Question 3" required><br>
+        <input type="text" id="question4" placeholder="Question 4" required><br>
+        <input type="text" id="question5" placeholder="Question 5" required><br>
+        <button onclick="submitQuestions()">Submit Questions</button>
+    </div>
+    <h2 id="status"></h2>
+    <h2>Question Display:</h2>
+    <p id="questionDisplay"></p>
+    <button id="nextButton">Next Question</button>
 </body>
 </html>
