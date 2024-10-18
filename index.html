@@ -15,6 +15,9 @@
         h1 {
             color: #333;
         }
+        h2 {
+            color: #555;
+        }
         #questionForm {
             margin: 20px 0;
         }
@@ -40,21 +43,47 @@
             margin-top: 20px;
             text-align: left;
         }
+        #currentQuestion {
+            margin: 20px 0;
+            font-size: 1.5em;
+        }
+        .reset-button {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            padding: 10px;
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .reset-button:hover {
+            background-color: #c82333;
+        }
     </style>
 </head>
 <body>
+    <button class="reset-button" id="resetButton">Reset Game</button>
     <h1>Welcome to the Memory Game!</h1>
+    <h2>How to Play:</h2>
+    <p>Each player will input five questions. After both players have submitted their questions, you will take turns answering the questions one at a time.</p>
+    
+    <h2>Enter Your Questions:</h2>
     <form id="questionForm">
         <input type="text" id="questionInput" placeholder="Enter your question" required>
         <button type="submit">Submit Question</button>
     </form>
+    
     <div id="questionsList"></div>
-    <script type="module">
-        // Import the functions you need from the SDKs you need
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
-        import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
+    <div id="currentQuestion"></div>
+    <button id="nextQuestionButton" style="display:none;">Next Question</button>
 
-        // Your web app's Firebase configuration
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+        import { getDatabase, ref, set, onValue, remove } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
+
+        // Your Firebase configuration
         const firebaseConfig = {
             apiKey: "AIzaSyDmjiA1BmuPaf-MgB9uWPcsYKDpbOLYDcU",
             authDomain: "questionspopo-7a8e6.firebaseapp.com",
@@ -72,33 +101,74 @@
         const questionForm = document.getElementById('questionForm');
         const questionInput = document.getElementById('questionInput');
         const questionsList = document.getElementById('questionsList');
+        const currentQuestionDisplay = document.getElementById('currentQuestion');
+        const nextQuestionButton = document.getElementById('nextQuestionButton');
+        const resetButton = document.getElementById('resetButton');
+
+        let playerQuestions = {};
+        let currentIndex = 0;
 
         questionForm.addEventListener('submit', (event) => {
             event.preventDefault();
+            const playerId = prompt("Enter your Player ID (e.g., player1 or player2):");
             const question = questionInput.value;
 
-            // Generate a unique key for the question
-            const questionId = Date.now(); // Unique ID based on current timestamp
-
-            // Push question to Firebase under a common path
-            set(ref(database, 'memoryGame/questions/' + questionId), {
-                question: question
-            });
-
-            // Clear the input field
-            questionInput.value = '';
+            // Store question in Firebase under the player's ID
+            if (!playerQuestions[playerId]) {
+                playerQuestions[playerId] = [];
+            }
+            if (playerQuestions[playerId].length < 5) {
+                playerQuestions[playerId].push(question);
+                set(ref(database, `memoryGame/${playerId}/questions/${Date.now()}`), question);
+                questionInput.value = '';
+                displayQuestions();
+            } else {
+                alert("You have already submitted 5 questions!");
+            }
         });
 
-        // Listen for questions from Firebase
-        const questionsRef = ref(database, 'memoryGame/questions/');
-        onValue(questionsRef, (snapshot) => {
-            questionsList.innerHTML = ''; // Clear the existing questions
-            snapshot.forEach((childSnapshot) => {
-                const questionData = childSnapshot.val();
-                const questionItem = document.createElement('div');
-                questionItem.textContent = questionData.question;
-                questionsList.appendChild(questionItem);
-            });
+        function displayQuestions() {
+            questionsList.innerHTML = '';
+            for (const playerId in playerQuestions) {
+                playerQuestions[playerId].forEach(question => {
+                    const questionItem = document.createElement('div');
+                    questionItem.textContent = question;
+                    questionsList.appendChild(questionItem);
+                });
+            }
+            checkIfBothPlayersSubmitted();
+        }
+
+        function checkIfBothPlayersSubmitted() {
+            if (playerQuestions['player1'] && playerQuestions['player1'].length === 5 &&
+                playerQuestions['player2'] && playerQuestions['player2'].length === 5) {
+                nextQuestionButton.style.display = 'inline';
+                loadNextQuestion();
+            }
+        }
+
+        function loadNextQuestion() {
+            const player1Questions = Object.values(playerQuestions['player1']);
+            const player2Questions = Object.values(playerQuestions['player2']);
+            if (currentIndex < Math.min(player1Questions.length, player2Questions.length)) {
+                currentQuestionDisplay.textContent = `Question: ${player1Questions[currentIndex]} (Player 1)`;
+                currentIndex++;
+            } else {
+                currentQuestionDisplay.textContent = "No more questions!";
+                nextQuestionButton.style.display = 'none';
+            }
+        }
+
+        nextQuestionButton.addEventListener('click', loadNextQuestion);
+
+        resetButton.addEventListener('click', () => {
+            // Clear both players' questions in Firebase
+            remove(ref(database, 'memoryGame'));
+            playerQuestions = {};
+            questionsList.innerHTML = '';
+            currentQuestionDisplay.innerHTML = '';
+            currentIndex = 0;
+            nextQuestionButton.style.display = 'none';
         });
     </script>
 </body>
